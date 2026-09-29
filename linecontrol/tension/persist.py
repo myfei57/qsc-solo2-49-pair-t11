@@ -17,7 +17,7 @@ class PersistOps:
         if snapshot.value <= 0:
             return
         self.data.setpoint = snapshot.value
-        if snapshot.gain > 0:
-            self.data.gain = snapshot.gain
+        # The gain is intentionally not taken from the seam snapshot: after a
+        # restart only the confirmed gain version log may drive the live gain.
         self.data.persisted = True
         self.data.machine.force("permitted")

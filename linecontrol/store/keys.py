@@ -2,6 +2,7 @@
 
 KEY_TENSION = "tension.current"
 KEY_GAIN = "tension.gain"
+KEY_GAIN_VERSIONS = "tension.gain.versions"
 KEY_ACID = "pickle.acid"
 KEY_PUMP = "pump.state"
 KEY_TRACK = "strip.track"

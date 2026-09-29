@@ -27,6 +27,9 @@ class Roller(GainOps, SetpointOps, SpeedOps, PersistOps, RampOps):
         return self._state
 
     def snapshot(self) -> dict[str, object]:
+        log = self.data.gain_log
+        active = log.active()
+        pending = log.pending()
         return {
             "setpoint": self.setpoint(),
             "gain": self.gain(),
@@ -34,4 +37,8 @@ class Roller(GainOps, SetpointOps, SpeedOps, PersistOps, RampOps):
             "allowed": self.speed_permitted(),
             "effective": self.data.effective_tension(),
             "transitions": list(self.data.machine.history()),
+            "gainVersion": active.version if active else 0,
+            "pendingGain": pending.gain if pending else None,
+            "pendingVersion": pending.version if pending else None,
+            "gainVersions": [version.to_dict() for version in log.versions],
         }

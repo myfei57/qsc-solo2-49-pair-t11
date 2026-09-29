@@ -154,7 +154,11 @@ def test_alarm_and_clear_pair(line: Line) -> None:
 
 def test_commands_forward_to_the_areas(line: Line) -> None:
     line.load_coil("C-1", 60.0)
-    assert line.recalibrate_tension(1.1) is True
+    pending = line.recalibrate_tension(1.1)
+    assert pending.confirmed is False
+    assert line.tension.gain() == pytest.approx(1.0)
+    confirmed = line.confirm_tension_gain()
+    assert confirmed.version == pending.version
     assert line.tension.gain() == pytest.approx(1.1)
     assert line.correct_head() == pytest.approx(2.0)
     line.align_offset(-4.0)

@@ -19,8 +19,8 @@ class SpeedOps:
                 TensionErrorCode.NOT_PERSISTED, "weld tension not persisted"
             )
         self.data.setpoint = snapshot.value
-        if snapshot.gain > 0:
-            self.data.gain = snapshot.gain
+        # The live gain stays whatever gain version is active; the seam
+        # snapshot only records what the weld was made against.
         self.data.persisted = True
         self.data.machine.enter(SpeedState.PERMITTED)
         self.data.machine.enter(SpeedState.RUNNING)

@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from ..domain.machine import StateMachine
+from ..domain.records import GainVersionLog
 
 #: Recalibration smaller than this is treated as sensor noise.
 GAIN_TOLERANCE = 0.05
@@ -67,6 +68,7 @@ class TensionState:
     setpoint: float = 0.0
     gain: float = 1.0
     persisted: bool = False
+    gain_log: GainVersionLog = field(default_factory=GainVersionLog)
     machine: StateMachine = field(default_factory=new_speed_machine)
 
     def effective_tension(self) -> float:

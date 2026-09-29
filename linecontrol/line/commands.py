@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ..domain.events import Event
 from ..domain.kinds import EventKind
-from ..domain.records import TensionSnapshot, WeldRecord
+from ..domain.records import GainVersion, TensionSnapshot, WeldRecord
 from ..pickle.dosing import DosePlan
 from ..pump.errors import PumpError, PumpErrorCode
 from ..tension.state import RampPlan
@@ -16,8 +16,36 @@ WELD_OVER_CURRENT = "weld-overcurrent"
 class CommandOps:
     """Mixed into :class:`~linecontrol.line.machine.Line`."""
 
-    def recalibrate_tension(self, gain: float) -> bool:
-        return self.tension.recalibrate(gain)
+    def recalibrate_tension(self, gain: float) -> GainVersion:
+        """Submit a calibration version without changing the live gain."""
+
+        version = self.tension.recalibrate(gain)
+        self.bus.publish(
+            Event(
+                kind=EventKind.TENSION,
+                source="tension",
+                message="gain-calibrated-pending",
+                payload=float(version.version),
+            )
+        )
+        return version
+
+    def confirm_tension_gain(self, version: int | None = None) -> GainVersion:
+        """Activate a pending calibration version; only now the gain applies."""
+
+        confirmed = self.tension.confirm_gain(version)
+        self.bus.publish(
+            Event(
+                kind=EventKind.TENSION,
+                source="tension",
+                message="gain-confirmed",
+                payload=float(confirmed.version),
+            )
+        )
+        return confirmed
+
+    def tension_gain_versions(self):
+        return self.tension.gain_versions()
 
     def alarm_overcurrent(self) -> None:
         self.weld.alarm()

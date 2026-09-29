@@ -14,15 +14,14 @@ class RecoveryOps:
     def recover(self) -> Recovery:
         """Rebuild every controller from the newest snapshots.
 
-        The stored gain is applied before the tension setpoint is restored so
-        that the roller never runs a restored setpoint against a stale
-        baseline.
+        The gain version log is restored before the tension setpoint so the
+        roller runs a restored setpoint against the confirmed gain baseline.
+        A pending, unconfirmed calibration never reaches the live gain.
         """
 
         self.set_phase(Phase.RECOVERING)
         state = collect(self.store)
-        if state.gain > 0:
-            self.tension.recalibrate(state.gain)
+        self.tension.restore_gain_versions(state.gain_versions, state.gain)
         self.weld.restore_latch(state.latch)
         self.weld.restore_tension(state.tension)
         self.tension.restore_tension(state.tension)

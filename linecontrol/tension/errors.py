@@ -10,6 +10,8 @@ class TensionErrorCode(str, Enum):
     INVALID_SPEED = "invalid-speed"
     NOT_PERSISTED = "not-persisted"
     RAMP_UNREADY = "ramp-unready"
+    NO_PENDING_GAIN = "no-pending-gain"
+    UNKNOWN_GAIN_VERSION = "unknown-gain-version"
 
 
 class TensionError(RuntimeError):

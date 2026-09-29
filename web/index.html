@@ -71,8 +71,14 @@
       </form>
       <form class="inline" data-form="tension-calibrate">
         <label>张力增益<input name="gain" type="number" step="0.01" value="1.08"></label>
-        <button type="submit">标定增益</button>
+        <button type="submit">提交标定版本</button>
       </form>
+      <div class="inline gain-banner">
+        <span>生效版本：<b id="gainActive">无</b></span>
+        <span>待确认：<b id="gainPending">无</b></span>
+        <button data-op="gain-confirm">确认待生效版本</button>
+      </div>
+      <ul id="gainVersionList" class="gain-versions"></ul>
     </div>
     <div class="panel">
       <h2>酸洗与烘干</h2>

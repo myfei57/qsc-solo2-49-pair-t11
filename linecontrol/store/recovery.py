@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from ..domain.records import (
     AcidSnapshot,
+    GainVersionLog,
     LatchSnapshot,
     PumpSnapshot,
     RinseSnapshot,
@@ -17,6 +18,7 @@ from .filestore import FileStore
 from .keys import (
     KEY_ACID,
     KEY_GAIN,
+    KEY_GAIN_VERSIONS,
     KEY_HOURS,
     KEY_LATCH,
     KEY_PUMP,
@@ -34,6 +36,7 @@ class Recovery:
 
     tension: TensionSnapshot = field(default_factory=TensionSnapshot)
     gain: float = 0.0
+    gain_versions: GainVersionLog = field(default_factory=GainVersionLog)
     acid: AcidSnapshot = field(default_factory=AcidSnapshot)
     pump: PumpSnapshot = field(default_factory=PumpSnapshot)
     track: TrackSnapshot = field(default_factory=TrackSnapshot)
@@ -47,6 +50,7 @@ class Recovery:
         return {
             "tension": self.tension.to_dict(),
             "gain": self.gain,
+            "gainVersions": self.gain_versions.to_dict(),
             "acid": self.acid.to_dict(),
             "pump": self.pump.to_dict(),
             "track": self.track.to_dict(),
@@ -70,6 +74,9 @@ def collect(store: FileStore) -> Recovery:
     recovery.gain = load_float(store, KEY_GAIN)
     if store.exists(KEY_GAIN):
         present.append(KEY_GAIN)
+    recovery.gain_versions, ok = load_json(store, KEY_GAIN_VERSIONS, GainVersionLog)
+    if ok:
+        present.append(KEY_GAIN_VERSIONS)
     recovery.acid, ok = load_json(store, KEY_ACID, AcidSnapshot)
     if ok:
         present.append(KEY_ACID)

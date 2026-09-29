@@ -60,6 +60,25 @@ function renderState(state) {
   setText("speed", fmt(state.strip ? state.strip.speed : 0, 2));
   setText("travel", fmt(state.strip ? state.strip.travel : 0, 1));
 
+  const tension = state.tension || {};
+  setText("gainActive", tension.gainVersion ? "v" + tension.gainVersion + " (" + fmt(tension.gain, 3) + ")" : "无");
+  setText("gainPending", tension.pendingVersion ? "v" + tension.pendingVersion + " (" + fmt(tension.pendingGain, 3) + ")" : "无");
+  const versionList = document.getElementById("gainVersionList");
+  if (versionList) {
+    versionList.innerHTML = "";
+    (tension.gainVersions || []).slice().reverse().forEach(function (version) {
+      const li = document.createElement("li");
+      li.className = version.status === "confirmed" ? "gain-confirmed" : "gain-pending";
+      const when = version.confirmedAt
+        ? new Date(version.confirmedAt).toLocaleString()
+        : new Date(version.created).toLocaleString();
+      li.textContent = "v" + version.version + " 增益 " + fmt(version.gain, 3)
+        + " " + (version.status === "confirmed" ? "已确认" : "待确认")
+        + " " + when;
+      versionList.appendChild(li);
+    });
+  }
+
   const lamps = document.getElementById("lamps");
   lamps.innerHTML = "";
   LAMP_SOURCES.forEach(function (entry) {
@@ -159,6 +178,7 @@ const OP_CALLS = {
   "dry-reheat": () => post("/api/dry/reheat"),
   "entry-correct": () => post("/api/entry/correct"),
   "stop": () => post("/api/stop"),
+  "gain-confirm": () => post("/api/tension/gain/confirm"),
   "strip-sag": async () => {
     const data = await loadJSON("/api/strip/sag");
     window.alert("垂度 " + fmt(data.sag, 2) + " mm");

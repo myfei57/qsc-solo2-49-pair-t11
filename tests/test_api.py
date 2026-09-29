@@ -26,6 +26,7 @@ def test_read_only_endpoints(client: FlaskClient) -> None:
         "/api/audit/summary",
         "/api/weld/seams",
         "/api/tension/persisted",
+        "/api/tension/gain/versions",
         "/api/strip/sag",
         "/api/sequence",
     ):
@@ -142,3 +143,37 @@ def test_sequence_clear_endpoint(client: FlaskClient) -> None:
     client.post("/api/entry/sample?value=1")
     assert client.post("/api/sequence/clear").status_code == 200
     assert client.get("/api/sequence").get_json()["sequence"]["steps"] == []
+
+
+def test_gain_calibration_stays_pending_until_confirmation(
+    client: FlaskClient,
+) -> None:
+    state = client.get("/api/state").get_json()["state"]["tension"]
+    assert state["gain"] == 1.0 and state["gainVersion"] == 0
+
+    calibrated = client.post("/api/tension/calibrate?gain=1.2").get_json()
+    assert calibrated["version"]["status"] == "pending"
+    assert calibrated["liveGain"] == 1.0
+
+    versions = client.get("/api/tension/gain/versions").get_json()
+    assert versions["pendingVersion"] == 1 and versions["activeVersion"] == 0
+
+    confirmed = client.post("/api/tension/gain/confirm").get_json()
+    assert confirmed["version"]["status"] == "confirmed"
+    assert confirmed["gain"] == 1.2
+
+    state = client.get("/api/state").get_json()["state"]["tension"]
+    assert state["gain"] == 1.2 and state["gainVersion"] == 1
+    assert state["pendingGain"] is None
+
+    # Nothing pending left: a further confirmation is a conflict.
+    conflict = client.post("/api/tension/gain/confirm")
+    assert conflict.status_code == 409
+    assert conflict.get_json()["detail"]["code"] == "no-pending-gain"
+
+
+def test_gain_confirmation_rejects_an_unknown_version(client: FlaskClient) -> None:
+    client.post("/api/tension/calibrate?gain=1.2")
+    response = client.post("/api/tension/gain/confirm?version=99")
+    assert response.status_code == 409
+    assert response.get_json()["detail"]["code"] == "unknown-gain-version"
