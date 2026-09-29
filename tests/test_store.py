@@ -8,6 +8,7 @@ import pytest
 
 from linecontrol.domain.records import (
     AcidSnapshot,
+    GainVersion,
     LatchSnapshot,
     PumpSnapshot,
     RinseSnapshot,
@@ -19,6 +20,7 @@ from linecontrol.store.filestore import FileStore
 from linecontrol.store.keys import (
     KEY_ACID,
     KEY_GAIN,
+    KEY_GAIN_VERSIONS,
     KEY_HOURS,
     KEY_LATCH,
     KEY_PUMP,
@@ -31,8 +33,10 @@ from linecontrol.store.recovery import collect
 from linecontrol.store.snapshot import (
     load_float,
     load_json,
+    load_versions,
     save_float,
     save_json,
+    save_versions,
     snapshot_type_names,
 )
 
@@ -70,6 +74,20 @@ def test_float_helpers(tmp_path) -> None:
     assert load_float(store, KEY_GAIN) == pytest.approx(1.15)
     store.save(KEY_HOURS, b"null")
     assert load_float(store, KEY_HOURS) == 0.0
+
+
+def test_gain_version_ledger_round_trip(tmp_path) -> None:
+    store = FileStore(tmp_path)
+    assert load_versions(store, KEY_GAIN_VERSIONS) == []
+    versions = [
+        GainVersion(version=1, gain=1.0, status=GainVersion.CONFIRMED),
+        GainVersion(version=2, gain=1.2, status=GainVersion.PENDING),
+    ]
+    save_versions(store, KEY_GAIN_VERSIONS, versions)
+    restored = load_versions(store, KEY_GAIN_VERSIONS)
+    assert restored == versions
+    store.save(KEY_GAIN_VERSIONS, b"{broken")
+    assert load_versions(store, KEY_GAIN_VERSIONS) == []
 
 
 def test_store_rejects_a_path_traversal_key(tmp_path) -> None:

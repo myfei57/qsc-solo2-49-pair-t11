@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pytest
 from flask.testing import FlaskClient
 
 
@@ -142,3 +143,38 @@ def test_sequence_clear_endpoint(client: FlaskClient) -> None:
     client.post("/api/entry/sample?value=1")
     assert client.post("/api/sequence/clear").status_code == 200
     assert client.get("/api/sequence").get_json()["sequence"]["steps"] == []
+
+
+def test_gain_calibration_requires_confirmation(client: FlaskClient) -> None:
+    calibrated = client.post("/api/tension/calibrate?gain=1.2").get_json()
+    assert calibrated["status"] == "pending"
+    assert calibrated["liveGain"] == 1.0
+
+    state = client.get("/api/state").get_json()["state"]["tension"]
+    assert state["pendingGain"] == pytest.approx(1.2)
+    assert state["gain"] == 1.0
+
+    confirmed = client.post("/api/tension/gain/confirm").get_json()
+    assert confirmed["version"] == calibrated["version"]
+    assert confirmed["liveGain"] == pytest.approx(1.2)
+
+    state = client.get("/api/state").get_json()["state"]["tension"]
+    assert state["pendingGain"] is None
+    assert state["gain"] == pytest.approx(1.2)
+    statuses = {v["status"] for v in state["gainVersions"]}
+    assert "pending" not in statuses
+
+
+def test_gain_discard_leaves_the_live_gain_untouched(client: FlaskClient) -> None:
+    client.post("/api/tension/calibrate?gain=1.3")
+    discarded = client.post("/api/tension/gain/discard").get_json()
+    assert discarded["ok"] is True
+    state = client.get("/api/state").get_json()["state"]["tension"]
+    assert state["pendingGain"] is None
+    assert state["gain"] == 1.0
+
+
+def test_gain_confirm_without_a_pending_version_conflicts(client: FlaskClient) -> None:
+    response = client.post("/api/tension/gain/confirm")
+    assert response.status_code == 409
+    assert response.get_json()["detail"]["code"] == "gain-not-pending"

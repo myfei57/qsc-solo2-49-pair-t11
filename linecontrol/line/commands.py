@@ -16,8 +16,47 @@ WELD_OVER_CURRENT = "weld-overcurrent"
 class CommandOps:
     """Mixed into :class:`~linecontrol.line.machine.Line`."""
 
-    def recalibrate_tension(self, gain: float) -> bool:
-        return self.tension.recalibrate(gain)
+    def recalibrate_tension(self, gain: float):
+        """Register a calibration candidate; it stays pending until confirmed."""
+
+        version = self.tension.recalibrate(gain)
+        self.bus.publish(
+            Event(
+                kind=EventKind.TENSION,
+                source="tension",
+                message="gain-calibrated",
+                payload=version.gain,
+            )
+        )
+        return version
+
+    def confirm_tension_gain(self, version: int | None = None):
+        """Sign off a pending gain version; the live tension follows it at once."""
+
+        confirmed = self.tension.confirm_gain(version)
+        self.bus.publish(
+            Event(
+                kind=EventKind.TENSION,
+                source="tension",
+                message="gain-confirmed",
+                payload=confirmed.gain,
+            )
+        )
+        return confirmed
+
+    def discard_tension_gain(self, version: int | None = None):
+        """Reject a pending calibration without changing the running gain."""
+
+        discarded = self.tension.discard_pending(version)
+        self.bus.publish(
+            Event(
+                kind=EventKind.TENSION,
+                source="tension",
+                message="gain-discarded",
+                payload=discarded.gain,
+            )
+        )
+        return discarded
 
     def alarm_overcurrent(self) -> None:
         self.weld.alarm()

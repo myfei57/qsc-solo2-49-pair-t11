@@ -19,7 +19,9 @@ class SpeedOps:
                 TensionErrorCode.NOT_PERSISTED, "weld tension not persisted"
             )
         self.data.setpoint = snapshot.value
-        if snapshot.gain > 0:
+        if snapshot.gain > 0 and not self.data.gain_confirmed:
+            # Legacy snapshot: only trusts its gain when no confirmed version
+            # has been installed.  A confirmed calibration always wins.
             self.data.gain = snapshot.gain
         self.data.persisted = True
         self.data.machine.enter(SpeedState.PERMITTED)

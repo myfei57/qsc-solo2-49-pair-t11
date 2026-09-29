@@ -9,6 +9,12 @@ from ..domain.machine import StateMachine
 #: Recalibration smaller than this is treated as sensor noise.
 GAIN_TOLERANCE = 0.05
 
+#: Number of calibration versions retained in the on-disk ledger.
+GAIN_LEDGER_KEEP = 50
+
+#: Baseline gain assumed for a fresh roller with no calibration history.
+BASELINE_GAIN = 1.0
+
 #: Speed fractions applied by the ramp plan.
 DEFAULT_RAMP_STEPS = 3
 LONG_RAMP_STEPS = 5
@@ -66,6 +72,7 @@ class RampPlan:
 class TensionState:
     setpoint: float = 0.0
     gain: float = 1.0
+    gain_confirmed: bool = False
     persisted: bool = False
     machine: StateMachine = field(default_factory=new_speed_machine)
 

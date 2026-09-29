@@ -8,7 +8,7 @@ from linecontrol.domain.events import Event, utcnow
 from linecontrol.domain.kinds import STREAM_KINDS, EventKind
 from linecontrol.domain.machine import IllegalTransition, StateMachine
 from linecontrol.domain.phase import Phase
-from linecontrol.domain.records import LatchSnapshot, TensionSnapshot
+from linecontrol.domain.records import GainVersion, LatchSnapshot, TensionSnapshot
 
 
 def test_event_round_trip_preserves_fields() -> None:
@@ -58,6 +58,11 @@ def test_snapshot_records_round_trip() -> None:
     assert LatchSnapshot.from_dict(latch.to_dict()) == latch
     tension = TensionSnapshot(value=91.0, gain=1.2)
     assert TensionSnapshot.from_dict(tension.to_dict()) == tension
+    pending = GainVersion(version=2, gain=1.25, status=GainVersion.PENDING)
+    assert GainVersion.from_dict(pending.to_dict()) == pending
+    confirmed = GainVersion(version=2, gain=1.25)
+    restored = GainVersion.from_dict(confirmed.to_dict())
+    assert restored.status == GainVersion.CONFIRMED and restored.confirmed is None
 
 
 def test_phase_values_are_stable_strings() -> None:

@@ -50,7 +50,13 @@ function renderState(state) {
   setText("aligned", state.aligned ? "已确认" : "未确认");
   setText("track", fmt(state.strip ? state.strip.track : 0, 1));
   setText("tension", fmt(state.tension ? state.tension.setpoint : 0, 1));
-  setText("effective", fmt(state.tension ? state.tension.effective : 0, 1));
+  const tension = state.tension || null;
+  setText("gainLive", tension ? fmt(tension.gain, 3) : "-");
+  setText("gainPending", tension && tension.pendingGain !== null && tension.pendingGain !== undefined
+    ? "v" + tension.pendingVersion + " @ " + fmt(tension.pendingGain, 3)
+    : "无");
+  setText("effective", tension ? fmt(tension.effective, 1) : 0);
+  renderGainVersions(tension);
   setText("concentration", fmt(state.pickle ? state.pickle.concentration : 0, 2));
   setText("level", fmt(state.pickle ? state.pickle.level : 0, 2));
   setText("rinsing", state.pickle && state.pickle.rinsing ? "开" : "关");
@@ -85,6 +91,30 @@ function renderState(state) {
       alarms.appendChild(li);
     });
   }
+}
+
+function renderGainVersions(tension) {
+  const list = document.getElementById("gainVersions");
+  if (!list) {
+    return;
+  }
+  list.innerHTML = "";
+  const versions = (tension && tension.gainVersions) || [];
+  if (!versions.length) {
+    const li = document.createElement("li");
+    li.textContent = "尚无标定记录";
+    list.appendChild(li);
+    return;
+  }
+  versions.slice().reverse().forEach(function (v) {
+    const li = document.createElement("li");
+    const labels = { pending: "待确认", confirmed: "已确认", discarded: "已废弃" };
+    const stamp = v.confirmed || v.calibrated || "";
+    const when = stamp ? new Date(stamp).toLocaleString() : "";
+    li.textContent = "v" + v.version + " 增益 " + fmt(v.gain, 3)
+      + " [" + (labels[v.status] || v.status) + "] " + when;
+    list.appendChild(li);
+  });
 }
 
 function renderEvents(events) {
@@ -163,6 +193,8 @@ const OP_CALLS = {
     const data = await loadJSON("/api/strip/sag");
     window.alert("垂度 " + fmt(data.sag, 2) + " mm");
   },
+  "gain-confirm": () => post("/api/tension/gain/confirm"),
+  "gain-discard": () => post("/api/tension/gain/discard"),
 };
 
 const FORM_CALLS = {

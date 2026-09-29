@@ -26,6 +26,8 @@
         <dt>对中</dt><dd id="aligned">未确认</dd>
         <dt>焊缝跟踪点</dt><dd id="track">0</dd>
         <dt>张力设定</dt><dd id="tension">0</dd>
+        <dt>生效增益</dt><dd id="gainLive">1</dd>
+        <dt>待确认增益</dt><dd id="gainPending">无</dd>
         <dt>实际张力</dt><dd id="effective">0</dd>
         <dt>槽体液位</dt><dd id="level">0</dd>
         <dt>酸浓度</dt><dd id="concentration">0</dd>
@@ -71,8 +73,14 @@
       </form>
       <form class="inline" data-form="tension-calibrate">
         <label>张力增益<input name="gain" type="number" step="0.01" value="1.08"></label>
-        <button type="submit">标定增益</button>
+        <button type="submit">标定（待确认）</button>
       </form>
+      <div class="ops">
+        <button data-op="gain-confirm">确认生效待标定增益</button>
+        <button data-op="gain-discard">废弃待标定增益</button>
+      </div>
+      <h3>增益版本记录</h3>
+      <ul id="gainVersions" class="versions"></ul>
     </div>
     <div class="panel">
       <h2>酸洗与烘干</h2>

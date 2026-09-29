@@ -17,7 +17,10 @@ class PersistOps:
         if snapshot.value <= 0:
             return
         self.data.setpoint = snapshot.value
-        if snapshot.gain > 0:
+        if snapshot.gain > 0 and not self.data.gain_confirmed:
+            # Legacy snapshot fallback: a confirmed calibration version
+            # installed earlier in recovery must not be overwritten here.
             self.data.gain = snapshot.gain
+            self.data.gain_confirmed = True
         self.data.persisted = True
         self.data.machine.force("permitted")

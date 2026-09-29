@@ -80,3 +80,51 @@ def test_recovery_leaves_a_foreign_gain_alone(tmp_path: Path) -> None:
     recovered = Line(tmp_path)
     recovered.recover()
     assert recovered.tension.gain() == 1.0
+
+
+def test_unconfirmed_gain_survives_restart_as_pending_not_live(tmp_path: Path) -> None:
+    line = Line(tmp_path)
+    line.recover()
+    line.recalibrate_tension(1.22)
+
+    recovered = Line(tmp_path)
+    recovered.recover()
+
+    pending = recovered.tension.pending_gain()
+    assert pending is not None and pending.gain == pytest.approx(1.22)
+    # Nobody confirmed it, so the running tension must not follow it.
+    assert recovered.tension.gain() == pytest.approx(1.0)
+
+
+def test_recovery_restores_the_confirmed_version(tmp_path: Path) -> None:
+    line = Line(tmp_path)
+    line.recover()
+    line.recalibrate_tension(1.18)
+    line.recalibrate_tension(1.22)
+    line.confirm_tension_gain()
+
+    recovered = Line(tmp_path)
+    recovered.recover()
+
+    assert recovered.tension.gain() == pytest.approx(1.22)
+    confirmed = recovered.tension.confirmed_gain()
+    assert confirmed is not None and confirmed.status == "confirmed"
+    # The older candidate was rejected alongside the confirmation.
+    statuses = {v.version: v.status for v in recovered.tension.gain_versions()}
+    assert all(status != "pending" for status in statuses.values())
+
+
+def test_a_welded_snapshot_gain_cannot_override_the_confirmed_version(
+    tmp_path: Path,
+) -> None:
+    line = Line(tmp_path)
+    line.recover()
+    line.recalibrate_tension(1.3)
+    line.confirm_tension_gain()
+    # A stale snapshot left behind by an older seam carries a different gain.
+    save_json(line.store, KEY_TENSION, TensionSnapshot(value=91.0, gain=1.05))
+
+    recovered = Line(tmp_path)
+    recovered.recover()
+
+    assert recovered.tension.gain() == pytest.approx(1.3)

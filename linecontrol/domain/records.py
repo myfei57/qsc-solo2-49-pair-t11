@@ -86,6 +86,47 @@ class TensionSnapshot:
 
 
 @dataclass(frozen=True, slots=True)
+class GainVersion:
+    """A tension gain calibration entry.
+
+    Only entries whose status is :data:`GainVersion.CONFIRMED` are allowed to
+    drive the live tension.  A freshly calibrated entry stays
+    :data:`GainVersion.PENDING` until an operator confirms it, so a running
+    coil never follows a gain nobody has signed off.
+    """
+
+    PENDING = "pending"
+    CONFIRMED = "confirmed"
+    DISCARDED = "discarded"
+
+    version: int = 0
+    gain: float = 1.0
+    status: str = CONFIRMED
+    calibrated: datetime = field(default_factory=utcnow)
+    confirmed: datetime | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "version": self.version,
+            "gain": self.gain,
+            "status": self.status,
+            "calibrated": self.calibrated.isoformat(),
+            "confirmed": self.confirmed.isoformat() if self.confirmed else None,
+        }
+
+    @classmethod
+    def from_dict(cls, raw: dict[str, Any]) -> "GainVersion":
+        raw_confirmed = raw.get("confirmed")
+        return cls(
+            version=int(raw.get("version", 0)),
+            gain=float(raw.get("gain", 1.0)),
+            status=str(raw.get("status", cls.CONFIRMED)),
+            calibrated=_stamp(raw.get("calibrated")),
+            confirmed=_stamp(raw_confirmed) if raw_confirmed else None,
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class AcidSnapshot:
     level: float = 0.0
     offset: float = 0.0

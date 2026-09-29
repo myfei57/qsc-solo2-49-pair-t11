@@ -7,6 +7,7 @@ from typing import TypeVar
 
 from ..domain.records import (
     AcidSnapshot,
+    GainVersion,
     LatchSnapshot,
     PumpSnapshot,
     RinseSnapshot,
@@ -21,6 +22,7 @@ T = TypeVar("T")
 #: Record classes that can be round-tripped through the snapshot helpers.
 SNAPSHOT_TYPES = (
     AcidSnapshot,
+    GainVersion,
     LatchSnapshot,
     PumpSnapshot,
     RinseSnapshot,
@@ -60,6 +62,30 @@ def load_float(store: FileStore, key: str) -> float:
 
 def save_float(store: FileStore, key: str, value: float) -> None:
     store.save(key, json.dumps(float(value)).encode("utf-8"))
+
+
+def load_versions(store: FileStore, key: str) -> list[GainVersion]:
+    """Read an ordered list of :class:`GainVersion` records."""
+
+    raw = store.load(key)
+    if raw is None or not raw.strip():
+        return []
+    try:
+        decoded = json.loads(raw.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return []
+    if not isinstance(decoded, list):
+        return []
+    versions: list[GainVersion] = []
+    for item in decoded:
+        if isinstance(item, dict):
+            versions.append(GainVersion.from_dict(item))
+    return versions
+
+
+def save_versions(store: FileStore, key: str, versions: list[GainVersion]) -> None:
+    payload = [version.to_dict() for version in versions]
+    store.save(key, json.dumps(payload, ensure_ascii=False).encode("utf-8"))
 
 
 def save_events(store: FileStore, key: str, events: list[dict]) -> None:

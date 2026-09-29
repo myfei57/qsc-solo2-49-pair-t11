@@ -196,8 +196,29 @@ class Api:
         return {"ok": True}
 
     def tension_calibrate(self, request: Request) -> dict[str, object]:
-        changed = self.line.recalibrate_tension(float_param(request, "gain"))
-        return {"ok": True, "changed": changed, "gain": self.line.tension.gain()}
+        version = self.line.recalibrate_tension(float_param(request, "gain"))
+        return {
+            "ok": True,
+            "version": version.version,
+            "status": version.status,
+            "gain": version.gain,
+            "liveGain": self.line.tension.gain(),
+        }
+
+    def tension_gain_confirm(self, request: Request) -> dict[str, object]:
+        version = int_param(request, "version", 0) or None
+        confirmed = self.line.confirm_tension_gain(version)
+        return {
+            "ok": True,
+            "version": confirmed.version,
+            "gain": confirmed.gain,
+            "liveGain": self.line.tension.gain(),
+        }
+
+    def tension_gain_discard(self, request: Request) -> dict[str, object]:
+        version = int_param(request, "version", 0) or None
+        discarded = self.line.discard_tension_gain(version)
+        return {"ok": True, "version": discarded.version, "gain": discarded.gain}
 
     def tension_ramp(self, request: Request) -> dict[str, object]:
         plan = self.line.ramp_speed(float_param(request, "target"))

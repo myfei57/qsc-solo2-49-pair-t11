@@ -112,6 +112,18 @@ main {
   list-style: none;
 }
 
+.versions {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.versions li {
+  padding: 4px 8px;
+  border-bottom: 1px solid #e1e8f0;
+}
+
 .lamp {
   padding: 6px 10px;
   margin-bottom: 6px;

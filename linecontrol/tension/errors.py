@@ -7,6 +7,7 @@ from enum import Enum
 
 class TensionErrorCode(str, Enum):
     INVALID_GAIN = "invalid-gain"
+    GAIN_NOT_PENDING = "gain-not-pending"
     INVALID_SPEED = "invalid-speed"
     NOT_PERSISTED = "not-persisted"
     RAMP_UNREADY = "ramp-unready"
